@@ -1,37 +1,74 @@
-require("dotenv").config();
+// const TOKEN = "7636130435:AAGO6lV_ptqI8z4ZMK3dkNc-arDnax5xvyI";
+// const url = "https://thewhiteshark.vercel.app"; // Your Vercel deployment URL
+const port = 3300;
+
+const { Telegraf } = require("telegraf");
 const express = require("express");
-const axios = require("axios");
-// const bodyParser = require("body-parser");
-
-const { TOKEN, TELEGRAM_WEBHOOK_URL } = process.env;
-const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`;
-const URI = `/webhook/${TOKEN}`;
-const WEBHOOK_URL = TELEGRAM_WEBHOOK_URL + URI;
-
 const app = express();
+const dotenv = require("dotenv");
+
+dotenv.config();
+// JSON middleware
 app.use(express.json());
 
-const init = async () => {
-  const res = await axios.get(`${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`);
+// Create the bot instance without polling
+const bot = new Telegraf(process.env.TOKEN);
+
+// Webhook route for Telegram to send updates to
+app.post("/webhook", (req, res) => {
+  try {
+    bot.handleUpdate(req.body);
+    res.sendStatus(200); // Respond immediately for serverless function
+  } catch (error) {
+    console.error("Error processing update:", error);
+    res.sendStatus(500); // Handle unexpected errors
+  }
+});
+
+// Define a simple bot command, e.g., /start
+bot.start(async (ctx) => {
+  const chatId = ctx.chat.id.toString(); // Accessing the chat ID from context
+
+  try {
+    await ctx.reply("Welcome! Please use the web app:", {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "Go to Web App",
+              web_app: { url: "https://thewhiteshark.io/" },
+            },
+          ],
+        ],
+      },
+    });
+  } catch (error) {
+    console.error("Error responding to user:", error);
+    ctx.reply("An error occurred. Please try again later.");
+  }
+});
+
+// Set the webhook
+const setWebhook = async () => {
+  const webhookUrl = `${process.env.TELEGRAM_WEBHOOK_URL}/webhook`; // Replace with your URL
+
+  try {
+    await bot.telegram.setWebhook(webhookUrl);
+    console.log(`Webhook set to ${webhookUrl}`);
+  } catch (error) {
+    console.error("Error setting webhook:", error);
+  }
 };
 
-app.post(URI, async (req, res) => {
-  const chatId = req.body.message?.chat.id;
-  const text = req.body.message?.text;
-  res.status(200).send("ok");
+setWebhook();
+// bot.launch();
 
-  await axios.post(`${TELEGRAM_API}/sendMessage`, {
-    chat_id: chatId,
-    text: text,
-  });
-  return res.send();
-});
-
+// Root route to check server
 app.get("/", (req, res) => {
-    res.send("it's working");
+  res.send("It is Working");
 });
 
-app.listen(process.env.PORT || 5000, async () => {
-  console.log("🚀 app running on port", process.env.PORT || 5000);
-  await init();
+// Start Express Server
+app.listen(port, () => {
+  console.log(`Express server is listening on port ${port}`);
 });
