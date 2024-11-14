@@ -1,14 +1,10 @@
-// const TOKEN = "7636130435:AAGO6lV_ptqI8z4ZMK3dkNc-arDnax5xvyI";
-// const url = "https://thewhiteshark.vercel.app"; // Your Vercel deployment URL
-const port = 3300;
-
 const { Telegraf } = require("telegraf");
 const express = require("express");
-const app = express();
 const dotenv = require("dotenv");
 
 dotenv.config();
-// JSON middleware
+const app = express();
+
 app.use(express.json());
 
 // Create the bot instance without polling
@@ -48,7 +44,7 @@ bot.start(async (ctx) => {
   }
 });
 
-// Set the webhook
+// Set the webhook manually via cURL or Telegram Bot API
 const setWebhook = async () => {
   const webhookUrl = `${process.env.TELEGRAM_WEBHOOK_URL}/webhook`; // Replace with your URL
 
@@ -60,15 +56,12 @@ const setWebhook = async () => {
   }
 };
 
+// Call setWebhook to manually set it when deploying
 setWebhook();
-// bot.launch();
 
 // Root route to check server
 app.get("/", (req, res) => {
   res.send("It is Working");
 });
 
-// Start Express Server
-app.listen(port, () => {
-  console.log(`Express server is listening on port ${port}`);
-});
+module.exports = app;
